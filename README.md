@@ -7,7 +7,7 @@
 
 ### uruchomienie testów
 
-.\mvnw.cmd tests
+.\mvnw.cmd test
 
 ### uruchomienie
 
