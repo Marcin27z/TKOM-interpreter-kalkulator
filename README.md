@@ -1,17 +1,27 @@
 # TKOM-interpreter-kalkulator
 
-kompilacja
+## Windows
+### kompilacja
 
 .\mvnw.cmd clean install 
 
-lub
+### uruchomienie testów
+
+.\mvnw.cmd tests
+
+### uruchomienie
+
+java -jar .\target\interpreter-1.0-SNAPSHOT.jar
+
+## Linux
+### kompilacja
 
 ./mvnw clean install
 
-uruchomienie testów
-.\mvnw.cmd tests
+### uruchomienie testów
+
 ./mvnw test
 
-uruchomienie
-java -jar .\target\interpreter-1.0-SNAPSHOT.jar
+### uruchomienie
+
 java -jar ./target/interpreter-1.0-SNAPSHOT.jar
