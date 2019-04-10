@@ -1,0 +1,51 @@
+fun main() {
+
+	Number x = 2 + 5^3 * 5;
+	print(x);
+	Number y = (2, 7i) + (5, 8i);
+	Number z = 0x8A + 067677 + 0b110011 + 33;
+	for (Number i = 0; i < 5; i = i + 1) {
+		x = x * (x + 8);
+	}	
+}
+
+fun silnia(Number x) {
+	if (x == 0) return 1;
+	return x * silnia(x - 1);
+}
+
+operatory
+<=
+>=
+!=
+==
+%
++
+-
+*
+/
+^
+=
+
+slowa kluczowe:
+for
+if
+else
+fun
+return
+
+typy:
+Int
+Float
+Complex
+
+funkcje wbudowane:
+write/writeln
+read
+
+((x+5) + 8)*(4 + a)
+((((x+5)+8)+9)*(5*8)*(8))+8
+
+ifsaddfhasdlkjklsadjelse if else if else if else\
+
+"when", warunek, ciało_funkcji, ["else when", warunek, ciało_funkcji]*, ["else", ciało_funkcji]
