@@ -25,8 +25,7 @@ class Lexer(private val source: Source) {
   }
 
   private fun initMap() {
-    (48..57).forEach { d ->
-      // 0..9
+    (48..57).forEach { d -> // 0..9
       charMap[d.toChar()] = { gotDigit(it) }
     }
     ('a'..'z').forEach { c ->

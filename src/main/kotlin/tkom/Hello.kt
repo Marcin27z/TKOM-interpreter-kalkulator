@@ -6,7 +6,6 @@ import java.io.File
 import java.io.FileInputStream
 
 fun main(args: Array<String>) {
-//  println(48.toChar())
   val source = if (args.isNotEmpty()) {
     CommandLineSource(FileInputStream(File(args[0])))
   } else {
