@@ -21,7 +21,12 @@ class CommandLineSource(stream: InputStream) : Source {
 
   override fun getChar(): Character {
     if (move) {
-      currentCharacter.char = reader.read().toChar()
+      val read = reader.read()
+      if (read == -1) {
+        currentCharacter.char = '\u0000'
+      } else {
+        currentCharacter.char = read.toChar()
+      }
       currentCharacter.updatePosition()
       move = false
     }
