@@ -22,4 +22,14 @@ class MultiTokenTest {
         .apply { complexNumber = ComplexNumber(0.0, 0.5) }, tokenList[2])
     assertEquals(Token(value = "+", tokenType = TokenType.ADDITIVE_OPERATOR, position = Position(0, 5,5)), tokenList[1])
   }
+
+  @Test
+  fun test2() {
+    val source = CommandLineSource("a == a + 5\u0000".byteInputStream())
+    val lexer = Lexer(source)
+    do {
+      val token = lexer.getToken()
+      println(token)
+    } while (token.tokenType != TokenType.EOT)
+  }
 }

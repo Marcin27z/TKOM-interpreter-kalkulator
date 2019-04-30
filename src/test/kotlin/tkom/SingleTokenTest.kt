@@ -106,11 +106,11 @@ class SingleTokenTest {
   }
 
   @Test
-  fun returnedKeywordWhenAnyKeyWordEncountered() {
+  fun returnedKeywordWhenForKeyWordEncountered() {
     val anyKeyWord = "for"
     val source = CommandLineSource(anyKeyWord.byteInputStream())
     val token = Lexer(source).getToken()
-    assertEquals(Token(value = anyKeyWord, tokenType = TokenType.KEYWORD, position = Position(0, 1,1)), token)
+    assertEquals(Token(value = anyKeyWord, tokenType = TokenType.FOR_KEYWORD, position = Position(0, 1,1)), token)
   }
 
   @Test

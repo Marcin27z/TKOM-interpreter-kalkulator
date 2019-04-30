@@ -1,6 +1,7 @@
 package tkom
 
 import tkom.lexer.Lexer
+import tkom.parser.Parser
 import tkom.source.CommandLineSource
 import java.io.File
 import java.io.FileInputStream
@@ -12,9 +13,9 @@ fun main(args: Array<String>) {
     CommandLineSource(System.`in`)
   }
   val lexer = Lexer(source)
-  do {
-    val token = lexer.getToken()
-    println(token.toString())
-  } while (token.tokenType != TokenType.EOT)
+//  do {
+//    val token = lexer.getToken()
+//    println(token.toString())
+//  } while (token.tokenType != TokenType.EOT)
+  Parser(lexer, source).parse()
 }
-

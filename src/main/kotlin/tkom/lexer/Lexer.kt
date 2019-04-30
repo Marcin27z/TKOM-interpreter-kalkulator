@@ -3,6 +3,7 @@ package tkom.lexer
 import tkom.Token
 import tkom.Position
 import tkom.TokenType
+import tkom.parser.Parser
 import tkom.source.Source
 import java.lang.Exception
 import java.lang.NullPointerException
@@ -25,7 +26,8 @@ class Lexer(private val source: Source) {
   }
 
   private fun initMap() {
-    (48..57).forEach { d -> // 0..9
+    (48..57).forEach { d ->
+      // 0..9
       charMap[d.toChar()] = { gotDigit(it) }
     }
     ('a'..'z').forEach { c ->
@@ -49,14 +51,21 @@ class Lexer(private val source: Source) {
     charMap['^'] = { gotCircumflexAccent(it) }
     charMap['&'] = { gotAmpersand(it) }
     charMap['|'] = { gotPipe(it) }
+    charMap[','] = { gotComma(it) }
+    charMap[';'] = { gotSemicolon(it) }
     charMap['\u0000'] = { gotEOT(it) }
   }
 
   @Throws(InvalidCharacterException::class)
   fun getToken(): Token {
     var ch = source.getChar()
-    while (ch.isSpace() || ch.isLineSeparator()) {
+    while (ch.isSpace()) {
       ch = source.getNextChar()
+    }
+    if (ch.isLineSeparator()) {
+      val position = Position(ch.position)
+      source.getNextChar()
+      return Token(position = position, value = "\n", tokenType = TokenType.LINE_BREAK)
     }
     try {
       return charMap[ch.char]!!.invoke(ch.position)
@@ -162,7 +171,17 @@ class Lexer(private val source: Source) {
     }
     val builtString = stringBuilder.toString()
     return if (keywordSet.contains(builtString)) {
-      Token(position = position, value = builtString, tokenType = TokenType.KEYWORD)
+      val token = when (builtString) {
+        "for" -> Token(position = position, value = builtString, tokenType = TokenType.FOR_KEYWORD)
+        "if" -> Token(position = position, value = builtString, tokenType = TokenType.IF_KEYWORD)
+        "else" -> Token(position = position, value = builtString, tokenType = TokenType.ELSE_KEYWORD)
+        "return" -> Token(position = position, value = builtString, tokenType = TokenType.RETURN_KEYWORD)
+        "fun" -> Token(position = position, value = builtString, tokenType = TokenType.FUN_KEYWORD)
+        "break" -> Token(position = position, value = builtString, tokenType = TokenType.BREAK_KEYWORD)
+        "continue" -> Token(position = position, value = builtString, tokenType = TokenType.CONTINUE_KEYWORD)
+        else -> Token(position = position, value = builtString, tokenType = TokenType.IDENTIFIER)
+      }
+      token
     } else {
       Token(position = position, value = builtString, tokenType = TokenType.IDENTIFIER)
     }
@@ -170,10 +189,13 @@ class Lexer(private val source: Source) {
 
   private fun gotEqualSign(start: Position): Token { // =
     val position = Position(start)
-    return if (source.getNextChar().char != '=')
+    val nextChar = source.getNextChar().char
+    return if (nextChar != '=') {
       Token(position = position, value = "=", tokenType = TokenType.ASSIGNMENT)
-    else
+    } else {
+      source.moveToNext()
       Token(position = position, value = "==", tokenType = TokenType.RELATIONAL_OPERATOR)
+    }
   }
 
   private fun gotPlusSign(start: Position): Token { // +
@@ -224,10 +246,12 @@ class Lexer(private val source: Source) {
 
   private fun gotExclamationMark(start: Position): Token { // !
     val position = Position(start)
-    return if (source.getNextChar().char != '=')
+    return if (source.getNextChar().char != '=') {
       Token(position = position, value = "!", tokenType = TokenType.NEGATION)
-    else
+    } else {
+      source.moveToNext()
       Token(position = position, value = "!=", tokenType = TokenType.RELATIONAL_OPERATOR)
+    }
   }
 
   private fun gotPercentSign(start: Position): Token { // %
@@ -237,18 +261,22 @@ class Lexer(private val source: Source) {
 
   private fun gotLessSign(start: Position): Token { // <
     val position = Position(start)
-    return if (source.getNextChar().char != '=')
+    return if (source.getNextChar().char != '=') {
       Token(position = position, value = "<", tokenType = TokenType.RELATIONAL_OPERATOR)
-    else
+    } else {
+      source.moveToNext()
       Token(position = position, value = "<=", tokenType = TokenType.RELATIONAL_OPERATOR)
+    }
   }
 
   private fun gotGreaterSign(start: Position): Token { // >
     val position = Position(start)
-    return if (source.getNextChar().char != '=')
+    return if (source.getNextChar().char != '=') {
       Token(position = position, value = ">", tokenType = TokenType.RELATIONAL_OPERATOR)
-    else
+    } else {
+      source.moveToNext()
       Token(position = position, value = ">=", tokenType = TokenType.RELATIONAL_OPERATOR)
+    }
   }
 
   private fun gotAmpersand(start: Position): Token { // &
@@ -261,10 +289,22 @@ class Lexer(private val source: Source) {
 
   private fun gotPipe(start: Position): Token { // |
     val position = Position(start)
-    return if (source.getNextChar().char != '|')
+    return if (source.getNextChar().char != '|') {
       throw InvalidCharacterException()
-    else
+    } else {
+      source.moveToNext()
       Token(position = position, value = "||", tokenType = TokenType.LOGICAL_OR)
+    }
+  }
+
+  private fun gotComma(start: Position): Token { // ,
+    source.moveToNext()
+    return Token(position = Position(start), value = ",", tokenType = TokenType.COMMA)
+  }
+
+  private fun gotSemicolon(start: Position): Token { // ;
+    source.moveToNext()
+    return Token(position = Position(start), value = ";", tokenType = TokenType.SEMICOLON)
   }
 
   private fun gotEOT(start: Position): Token {
