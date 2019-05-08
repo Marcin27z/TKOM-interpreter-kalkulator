@@ -68,7 +68,7 @@ class Parser(private val lexer: Lexer, private val source: Source) {
 
   fun parse(): Pair<Int, Boolean> {
     print(">")
-    operation()
+    val rootNode = operation()
     for (error in errorList) {
       error.printError(source.getRawInput())
     }
@@ -77,130 +77,189 @@ class Parser(private val lexer: Lexer, private val source: Source) {
     return Pair(errors, exitFlag)
   }
 
-  fun operation() {
-//    println("operation")
-    when {
-      accept(TokenType.FUN_KEYWORD) -> functionDefinition()
-      accept(TokenType.LINE_BREAK) -> operation()
-      else -> instruction()
+  fun operation(): ASTNode {
+    return when {
+      accept(TokenType.FUN_KEYWORD) -> {
+        val funKeywordNode = ASTNode(token, listOf())
+        val functionDefinitionNode = functionDefinition()
+        funKeywordNode.nodes = listOf(functionDefinitionNode)
+        funKeywordNode
+      }
+      accept(TokenType.LINE_BREAK) -> {
+        operation()
+      }
+      else -> {
+        instruction()
+      }
     }
   }
 
-  fun instruction() {
-//    println("instruction")
-    when {
-      accept(TokenType.FOR_KEYWORD) -> loop()
-      accept(TokenType.IF_KEYWORD) -> iff()
+  fun instruction(): ASTNode {
+    return when {
+      accept(TokenType.FOR_KEYWORD) -> {
+        loop()
+      }
+      accept(TokenType.IF_KEYWORD) -> {
+        iff()
+      }
       accept(TokenType.RETURN_KEYWORD) -> {
-        returnn()
+        val returrnNode = returnn()
         if (!accept(TokenType.LINE_BREAK) && !accept(TokenType.SEMICOLON)) {
           error(token, TokenType.SEMICOLON)
         }
+        returrnNode
       }
       accept(TokenType.BREAK_KEYWORD) -> breakk()
       accept(TokenType.CONTINUE_KEYWORD) -> continuee()
-      accept(TokenType.LINE_BREAK) || accept(TokenType.SEMICOLON) -> {}
+      accept(TokenType.LINE_BREAK) || accept(TokenType.SEMICOLON) -> {
+        ASTNode(Token(), listOf())
+      }
       else -> {
-        complexExpression()
+        val complexExpressionNode = complexExpression()
         if (!accept(TokenType.LINE_BREAK) && !accept(TokenType.SEMICOLON)) {
           error(token, TokenType.SEMICOLON)
         }
+        complexExpressionNode
       }
     }
   }
 
-  fun functionDefinition() {
+  fun functionDefinition(): ASTNode {
 //    println("function definition")
+    val functionDefinitionNode = ASTNode(token, listOf())
     expect(TokenType.IDENTIFIER)
     expect(TokenType.OPEN_PARENTHESIS)
-    arguments()
+    val argumentsNode = arguments()
     expect(TokenType.CLOSE_PARENTHESIS)
     expect(TokenType.OPEN_BRACE)
     expect(TokenType.LINE_BREAK)
+    val instructionNodes = arrayListOf<ASTNode>()
     while (!accept(TokenType.CLOSE_BRACE)) {
-      instruction()
+      instructionNodes.add(instruction())
     }
+    functionDefinitionNode.nodes = listOf(argumentsNode, ASTNode(Token(), instructionNodes))
     expect(TokenType.LINE_BREAK)
+    return functionDefinitionNode
   }
 
-  fun arguments() {
-//    println("arguments")
+  fun arguments(): ASTNode {
+    val argumentsNode = ASTNode(Token(), listOf())
+    val identifiersNodes = arrayListOf<ASTNode>()
     if (accept(TokenType.IDENTIFIER)) {
+      identifiersNodes.add(ASTNode(token, listOf()))
       while (accept(TokenType.COMMA)) {
         expect(TokenType.IDENTIFIER)
+        identifiersNodes.add(ASTNode(token, listOf()))
       }
     }
+    argumentsNode.nodes = identifiersNodes
+    return argumentsNode
   }
 
-  fun callArguments() {
-    val callArgumensNode = ASTNode(Token(), listOf())
+  fun callArguments(): ASTNode {
+    val callArgumentsNode = ASTNode(Token(), listOf())
     val simpleExpressionsNodes = arrayListOf<ASTNode>()
     simpleExpressionsNodes.add(simpleExpression())
     while (accept(TokenType.COMMA)) {
       simpleExpressionsNodes.add(simpleExpression())
     }
-    callArgumensNode.nodes = simpleExpressionsNodes
+    callArgumentsNode.nodes = simpleExpressionsNodes
+    return callArgumentsNode
   }
 
-  fun loop() {
-//    println("loop")
+  fun loop(): ASTNode {
+    val loopNode = ASTNode(token, listOf())
     expect(TokenType.OPEN_PARENTHESIS)
-    assignment()
+    val assignmentNode = assignment()
     expect(TokenType.SEMICOLON)
-    complexExpression()
+    val complexExpressionNode = complexExpression()
     expect(TokenType.SEMICOLON)
-    assignment()
+    val secondAssignmentNode = assignment()
     expect(TokenType.CLOSE_PARENTHESIS)
     expect(TokenType.OPEN_BRACE)
     expect(TokenType.LINE_BREAK)
+    val instructionNodes = arrayListOf<ASTNode>()
     while (!accept(TokenType.CLOSE_BRACE)) {
-      instruction()
+      instructionNodes.add(instruction())
     }
     expect(TokenType.LINE_BREAK)
+    loopNode.nodes = listOf(assignmentNode, complexExpressionNode, secondAssignmentNode, ASTNode(Token(), instructionNodes))
+    return loopNode
   }
 
-  fun assignment() {
-//    println("assignment")
+  fun assignment(): ASTNode {
     expect(TokenType.IDENTIFIER)
+    val identifierNode = ASTNode(token, listOf())
     expect(TokenType.ASSIGNMENT)
-    complexExpression()
+    val assignmentNode = ASTNode(token, listOf())
+    val complexExpressionNode = complexExpression()
+    assignmentNode.nodes = listOf(identifierNode, complexExpressionNode)
+    return assignmentNode
   }
 
-  fun complexExpression() {
+  fun complexExpression(): ASTNode {
 //    println("complex expression")
-    simpleExpression()
-    while (accept(TokenType.ADDITIVE_OPERATOR) || accept(TokenType.MULTIPLICATIVE_OPERATOR) || accept(TokenType.ASSIGNMENT)) {
-      simpleExpression()
+    val firstSimpleExpressionNode = simpleExpression()
+    var complexExpressionNode = firstSimpleExpressionNode
+    while (true) {
+      if (accept(TokenType.ADDITIVE_OPERATOR)) {
+        val additiveOperatorNode = ASTNode(token, listOf())
+        val simpleExpressionNode = simpleExpression()
+        additiveOperatorNode.nodes = listOf(complexExpressionNode, simpleExpressionNode)
+        complexExpressionNode = additiveOperatorNode
+      } else if (accept(TokenType.MULTIPLICATIVE_OPERATOR)){
+        val multiplicativeOperatorNode = ASTNode(token, listOf())
+        val simpleExpressionNode = simpleExpression()
+        multiplicativeOperatorNode.nodes = listOf(complexExpressionNode, simpleExpressionNode)
+        complexExpressionNode = multiplicativeOperatorNode
+      } else if (accept(TokenType.ASSIGNMENT)) {
+        val assignmentNode = ASTNode(token, listOf())
+        val simpleExpressionNode = simpleExpression()
+        assignmentNode.nodes = listOf(complexExpressionNode, simpleExpressionNode)
+        complexExpressionNode = assignmentNode
+      } else {
+        break
+      }
     }
+    return complexExpressionNode
   }
 
-  fun simpleExpression() {
+  fun simpleExpression(): ASTNode {
 //    println("simple expression")
+    var simpleExpressionNode: ASTNode
     when {
       accept(TokenType.NEGATION) -> {
-        complexExpression()
+        val negationNode = ASTNode(token, listOf())
+        val complexExpressionNode = complexExpression()
+        negationNode.nodes = listOf(complexExpressionNode)
+        simpleExpressionNode = negationNode
       }
       accept(TokenType.OPEN_PARENTHESIS) -> {
         var parenthesis = 1
         while (accept(TokenType.OPEN_PARENTHESIS)) {
           parenthesis++
         }
-        complexExpression()
+        simpleExpressionNode = complexExpression()
         while (accept(TokenType.CLOSE_PARENTHESIS)) {
           parenthesis--
         }
       }
       else -> {
-        value()
+        val valueNode = value()
+        simpleExpressionNode = valueNode
         while (accept(TokenType.ADDITIVE_OPERATOR) || accept(TokenType.MULTIPLICATIVE_OPERATOR) || accept(TokenType.RELATIONAL_OPERATOR)) {
-          value()
+          val operatorNode = ASTNode(token, listOf())
+          val secondValueNode = value()
+          operatorNode.nodes = listOf(valueNode, secondValueNode)
+          simpleExpressionNode = operatorNode
         }
       }
     }
+    return simpleExpressionNode
   }
 
   fun value(): ASTNode {
-    var valueNode: ASTNode = ASTNode(Token(), listOf())
+    var valueNode = ASTNode(Token(), listOf())
     when {
       accept(TokenType.NUMBER) -> {
         val numberNode = ASTNode(token, listOf())
@@ -228,12 +287,13 @@ class Parser(private val lexer: Lexer, private val source: Source) {
         val negationNode = ASTNode(token, listOf())
         val negatedValueNode = value()
         negationNode.nodes = listOf(negatedValueNode)
+        valueNode = negationNode
       }
       accept(TokenType.LINE_BREAK) -> {
-
+        valueNode = ASTNode(token, listOf())
       }
       accept(TokenType.EOT) -> {
-
+        valueNode = ASTNode(token, listOf())
       }
 //      else -> {
 //        println("unexpected token")
@@ -243,44 +303,57 @@ class Parser(private val lexer: Lexer, private val source: Source) {
     return valueNode
   }
 
-  fun returnn() {
+  fun returnn(): ASTNode {
 //    println("return")
     if (!accept(TokenType.CLOSE_BRACE)) {
-      complexExpression()
+      return complexExpression()
+    } else {
+      return ASTNode(Token(), listOf())
     }
   }
 
-  fun iff() {
+  fun iff(): ASTNode {
 //    println("if")
+    val iffNode = ASTNode(token, listOf())
     expect(TokenType.OPEN_PARENTHESIS)
-    complexExpression()
+    val conditionNode = complexExpression()
     expect(TokenType.CLOSE_PARENTHESIS)
     expect(TokenType.OPEN_BRACE)
     expect(TokenType.LINE_BREAK)
+    val instructionsNodes = arrayListOf<ASTNode>()
     while (!accept(TokenType.CLOSE_BRACE)) {
-      instruction()
+      instructionsNodes.add(instruction())
     }
-    expect(TokenType.LINE_BREAK)
     if (accept(TokenType.ELSE_KEYWORD)) {
+      val elseNode = ASTNode(token, listOf())
       if (accept(TokenType.IF_KEYWORD)) {
-        iff()
+        elseNode.nodes = listOf(iff())
       } else {
         expect(TokenType.OPEN_BRACE)
         expect(TokenType.LINE_BREAK)
+        val instructionsNodes = arrayListOf<ASTNode>()
         while (!accept(TokenType.CLOSE_BRACE)) {
-          instruction()
+          instructionsNodes.add(instruction())
         }
+        elseNode.nodes = instructionsNodes
         expect(TokenType.LINE_BREAK)
       }
+      iffNode.nodes = listOf(conditionNode, ASTNode(Token(), instructionsNodes), elseNode)
+    } else {
+      expect(TokenType.LINE_BREAK)
+      iffNode.nodes = listOf(conditionNode, ASTNode(Token(), instructionsNodes))
     }
+    return iffNode
   }
 
-  fun breakk() {
+  fun breakk(): ASTNode {
     expect(TokenType.BREAK_KEYWORD)
+    return ASTNode(token, listOf())
   }
 
-  fun continuee() {
+  fun continuee(): ASTNode {
     expect(TokenType.CONTINUE_KEYWORD)
+    return ASTNode(token, listOf())
   }
 
   fun error(token: Token, tokenType: TokenType) {
