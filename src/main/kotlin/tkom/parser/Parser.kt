@@ -207,11 +207,6 @@ class Parser(private val lexer: Lexer, private val source: Source) {
         val simpleExpressionNode = simpleExpression()
         additiveOperatorNode.nodes = listOf(complexExpressionNode, simpleExpressionNode)
         complexExpressionNode = additiveOperatorNode
-      } else if (accept(TokenType.MULTIPLICATIVE_OPERATOR)){
-        val multiplicativeOperatorNode = ASTNode(token, listOf())
-        val simpleExpressionNode = simpleExpression()
-        multiplicativeOperatorNode.nodes = listOf(complexExpressionNode, simpleExpressionNode)
-        complexExpressionNode = multiplicativeOperatorNode
       } else if (accept(TokenType.ASSIGNMENT)) {
         val assignmentNode = ASTNode(token, listOf())
         val simpleExpressionNode = simpleExpression()
@@ -234,24 +229,23 @@ class Parser(private val lexer: Lexer, private val source: Source) {
         negationNode.nodes = listOf(complexExpressionNode)
         simpleExpressionNode = negationNode
       }
-      accept(TokenType.OPEN_PARENTHESIS) -> {
-        var parenthesis = 1
-        while (accept(TokenType.OPEN_PARENTHESIS)) {
-          parenthesis++
-        }
-        simpleExpressionNode = complexExpression()
-        while (accept(TokenType.CLOSE_PARENTHESIS)) {
-          parenthesis--
-        }
-      }
       else -> {
         val valueNode = value()
         simpleExpressionNode = valueNode
-        while (accept(TokenType.ADDITIVE_OPERATOR) || accept(TokenType.MULTIPLICATIVE_OPERATOR) || accept(TokenType.RELATIONAL_OPERATOR)) {
-          val operatorNode = ASTNode(token, listOf())
-          val secondValueNode = value()
-          operatorNode.nodes = listOf(valueNode, secondValueNode)
-          simpleExpressionNode = operatorNode
+        while (true) {
+          if (accept(TokenType.MULTIPLICATIVE_OPERATOR)){
+            val multiplicativeOperatorNode = ASTNode(token, listOf())
+            val secondValueNode = value()
+            multiplicativeOperatorNode.nodes = listOf(simpleExpressionNode, secondValueNode)
+            simpleExpressionNode = multiplicativeOperatorNode
+          } else if (accept(TokenType.RELATIONAL_OPERATOR)) {
+            val relationalOperatorNode = ASTNode(token, listOf())
+            val secondValueNode = value()
+            relationalOperatorNode.nodes = listOf(simpleExpressionNode, secondValueNode)
+            simpleExpressionNode = relationalOperatorNode
+          } else {
+            break
+          }
         }
       }
     }
@@ -261,6 +255,16 @@ class Parser(private val lexer: Lexer, private val source: Source) {
   fun value(): ASTNode {
     var valueNode = ASTNode(Token(), listOf())
     when {
+      accept(TokenType.OPEN_PARENTHESIS) -> {
+        var parenthesis = 1
+        while (accept(TokenType.OPEN_PARENTHESIS)) {
+          parenthesis++
+        }
+        valueNode = complexExpression()
+        while (accept(TokenType.CLOSE_PARENTHESIS)) {
+          parenthesis--
+        }
+      }
       accept(TokenType.NUMBER) -> {
         val numberNode = ASTNode(token, listOf())
         if (accept(TokenType.ADDITIVE_OPERATOR)) {

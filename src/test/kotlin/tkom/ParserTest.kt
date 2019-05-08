@@ -142,7 +142,7 @@ class ParserTest {
 
   @Test
   fun test15() {
-    val testProgram = "((1 + 3) * (8 - 4)) / 16\n"
+    val testProgram = "((1 + 3) * (8 + 4)) / 16\n"
     val source = CommandLineSource(testProgram.byteInputStream())
     val lexer = Lexer(source)
     val parser = Parser(lexer, source)
