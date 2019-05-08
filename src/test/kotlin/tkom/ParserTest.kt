@@ -15,7 +15,7 @@ class ParserTest {
 //    val source = CommandLineSource(System.`in`)
     val lexer = Lexer(source)
     val parser = Parser(lexer, source)
-    assertEquals(0, parser.parse())
+    assertEquals(0, parser.parse().first)
   }
 
   @Test
@@ -24,7 +24,7 @@ class ParserTest {
     val source = CommandLineSource(testProgram.byteInputStream())
     val lexer = Lexer(source)
     val parser = Parser(lexer, source)
-    assertEquals(0, parser.parse())
+    assertEquals(0, parser.parse().first)
   }
 
   @Test
@@ -33,7 +33,7 @@ class ParserTest {
     val source = CommandLineSource(testProgram.byteInputStream())
     val lexer = Lexer(source)
     val parser = Parser(lexer, source)
-    assertEquals(0, parser.parse())
+    assertEquals(0, parser.parse().first)
   }
 
   @Test
@@ -42,7 +42,7 @@ class ParserTest {
     val source = CommandLineSource(testProgram.byteInputStream())
     val lexer = Lexer(source)
     val parser = Parser(lexer, source)
-    assertEquals(0, parser.parse())
+    assertEquals(0, parser.parse().first)
   }
 
   @Test
@@ -51,7 +51,7 @@ class ParserTest {
     val source = CommandLineSource(testProgram.byteInputStream())
     val lexer = Lexer(source)
     val parser = Parser(lexer, source)
-    assertEquals(0, parser.parse())
+    assertEquals(0, parser.parse().first)
   }
 
   @Test
@@ -60,7 +60,7 @@ class ParserTest {
     val source = CommandLineSource(testProgram.byteInputStream())
     val lexer = Lexer(source)
     val parser = Parser(lexer, source)
-    assertEquals(1, parser.parse())
+    assertEquals(1, parser.parse().first)
   }
 
   @Test
@@ -69,7 +69,7 @@ class ParserTest {
     val source = CommandLineSource(testProgram.byteInputStream())
     val lexer = Lexer(source)
     val parser = Parser(lexer, source)
-    assertEquals(0, parser.parse())
+    assertEquals(0, parser.parse().first)
   }
 
   @Test
@@ -78,7 +78,7 @@ class ParserTest {
     val source = CommandLineSource(testProgram.byteInputStream())
     val lexer = Lexer(source)
     val parser = Parser(lexer, source)
-    assertEquals(0, parser.parse())
-    assertEquals(0, parser.parse())
+    assertEquals(0, parser.parse().first)
+    assertEquals(0, parser.parse().first)
   }
 }

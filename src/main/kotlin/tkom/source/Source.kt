@@ -14,4 +14,6 @@ interface Source {
   fun moveToNext()
 
   fun reset()
+
+  fun getRawInput(): String
 }

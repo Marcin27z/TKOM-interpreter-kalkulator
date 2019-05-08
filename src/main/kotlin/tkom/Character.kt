@@ -4,7 +4,7 @@ class Character {
   var char = 0.toChar()
   var position = Position(0, 0, 0)
 
-  fun isSpace() = char == ' '
+  fun isSpace() = char == ' ' || char == '\u0009'
 
   fun isLineSeparator() = char == '\n' || char == '\r'
 

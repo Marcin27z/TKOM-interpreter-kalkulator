@@ -17,5 +17,11 @@ fun main(args: Array<String>) {
 //    val token = lexer.getToken()
 //    println(token.toString())
 //  } while (token.tokenType != TokenType.EOT)
-  Parser(lexer, source).parse()
+  val parser = Parser(lexer, source)
+  var (errors, exitFlag) = parser.parse()
+  while (!exitFlag) {
+    val pair = parser.parse()
+    errors = pair.first
+    exitFlag = pair.second
+  }
 }

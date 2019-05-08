@@ -55,5 +55,6 @@ enum class TokenType {
   LOGICAL_OR,
   COMMA,
   SEMICOLON,
-  LINE_BREAK
+  LINE_BREAK,
+  BUILT_IN_FUNCTION
 }

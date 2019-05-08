@@ -3,7 +3,6 @@ package tkom.lexer
 import tkom.Token
 import tkom.Position
 import tkom.TokenType
-import tkom.parser.Parser
 import tkom.source.Source
 import java.lang.Exception
 import java.lang.NullPointerException
@@ -15,14 +14,26 @@ class Lexer(private val source: Source) {
 
   private val charMap = HashMap<Char, (Position) -> Token>()
   private val keywordSet = HashSet<String>()
+  private val builtInFunctionsSet = HashSet<String>()
+  private val specialWordsSet = HashSet<String>()
 
   init {
     initMap()
     initKeyWords()
+    initSpecialWords()
+    initBuiltInFunctions()
   }
 
   private fun initKeyWords() {
     keywordSet.addAll(listOf("for", "if", "else", "return", "break", "continue", "fun"))
+  }
+
+  private fun initBuiltInFunctions() {
+    builtInFunctionsSet.addAll(listOf("print", "println"))
+  }
+
+  private fun initSpecialWords() {
+    specialWordsSet.addAll(listOf("exit"))
   }
 
   private fun initMap() {
@@ -64,7 +75,7 @@ class Lexer(private val source: Source) {
     }
     if (ch.isLineSeparator()) {
       val position = Position(ch.position)
-      source.getNextChar()
+      source.moveToNext()
       return Token(position = position, value = "\n", tokenType = TokenType.LINE_BREAK)
     }
     try {
@@ -170,20 +181,23 @@ class Lexer(private val source: Source) {
       char = source.getNextChar()
     }
     val builtString = stringBuilder.toString()
-    return if (keywordSet.contains(builtString)) {
-      val token = when (builtString) {
-        "for" -> Token(position = position, value = builtString, tokenType = TokenType.FOR_KEYWORD)
-        "if" -> Token(position = position, value = builtString, tokenType = TokenType.IF_KEYWORD)
-        "else" -> Token(position = position, value = builtString, tokenType = TokenType.ELSE_KEYWORD)
-        "return" -> Token(position = position, value = builtString, tokenType = TokenType.RETURN_KEYWORD)
-        "fun" -> Token(position = position, value = builtString, tokenType = TokenType.FUN_KEYWORD)
-        "break" -> Token(position = position, value = builtString, tokenType = TokenType.BREAK_KEYWORD)
-        "continue" -> Token(position = position, value = builtString, tokenType = TokenType.CONTINUE_KEYWORD)
-        else -> Token(position = position, value = builtString, tokenType = TokenType.IDENTIFIER)
+    return when {
+      keywordSet.contains(builtString) -> {
+        val token = when (builtString) {
+          "for" -> Token(position = position, value = builtString, tokenType = TokenType.FOR_KEYWORD)
+          "if" -> Token(position = position, value = builtString, tokenType = TokenType.IF_KEYWORD)
+          "else" -> Token(position = position, value = builtString, tokenType = TokenType.ELSE_KEYWORD)
+          "return" -> Token(position = position, value = builtString, tokenType = TokenType.RETURN_KEYWORD)
+          "fun" -> Token(position = position, value = builtString, tokenType = TokenType.FUN_KEYWORD)
+          "break" -> Token(position = position, value = builtString, tokenType = TokenType.BREAK_KEYWORD)
+          "continue" -> Token(position = position, value = builtString, tokenType = TokenType.CONTINUE_KEYWORD)
+          else -> Token(position = position, value = builtString, tokenType = TokenType.IDENTIFIER)
+        }
+        token
       }
-      token
-    } else {
-      Token(position = position, value = builtString, tokenType = TokenType.IDENTIFIER)
+      builtInFunctionsSet.contains(builtString) -> Token(position = position, value = builtString, tokenType = TokenType.IDENTIFIER)
+      specialWordsSet.contains(builtString) -> Token(position = position, value = builtString, tokenType = TokenType.EOT)
+      else -> Token(position = position, value = builtString, tokenType = TokenType.IDENTIFIER)
     }
   }
 

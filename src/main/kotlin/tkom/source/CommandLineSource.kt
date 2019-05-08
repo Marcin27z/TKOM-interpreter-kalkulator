@@ -6,10 +6,12 @@ import java.io.InputStreamReader
 
 class CommandLineSource(stream: InputStream) : Source {
 
+
   private var reader = InputStreamReader(stream)
 
   private var currentCharacter = Character()
   private var move = true
+  private val rawInput = StringBuilder()
 
   override fun setInputStream(stream: InputStream) {
     reader = InputStreamReader(stream)
@@ -26,6 +28,7 @@ class CommandLineSource(stream: InputStream) : Source {
         currentCharacter.char = '\u0000'
       } else {
         currentCharacter.char = read.toChar()
+        rawInput.append(currentCharacter.char)
       }
       currentCharacter.updatePosition()
       move = false
@@ -39,6 +42,11 @@ class CommandLineSource(stream: InputStream) : Source {
   }
 
   override fun reset() {
+    rawInput.setLength(0)
     currentCharacter.reset()
+  }
+
+  override fun getRawInput(): String {
+    return rawInput.toString()
   }
 }
