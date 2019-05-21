@@ -170,5 +170,14 @@ class ParserTest {
     assertEquals(0, parser.parse().first)
   }
 
+  @Test
+  fun test18() {
+    val testProgram = "5 * 5 * 5 + 4\n"
+    val source = CommandLineSource(testProgram.byteInputStream())
+    val lexer = Lexer(source)
+    val parser = Parser(lexer, source)
+    assertEquals(0, parser.parse().first)
+  }
+
 
 }
