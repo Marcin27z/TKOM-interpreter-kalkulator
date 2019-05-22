@@ -1,6 +1,7 @@
 package tkom.ast.Logical
 
 import tkom.ast.ASTNode
+import tkom.ast.BinOpAstNode
 
-class OrAstNode(val leftOperand: ASTNode, val rightOperand: ASTNode): ASTNode() {
+class OrAstNode(leftOperand: ASTNode, rightOperand: ASTNode): BinOpAstNode(leftOperand, rightOperand) {
 }

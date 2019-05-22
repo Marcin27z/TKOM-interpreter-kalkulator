@@ -1,4 +1,4 @@
 package tkom.ast
 
-class ReturnAstNode(val value: ASTNode? = null): ASTNode() {
+class ReturnAstNode(val value: ASTNode = NopAstNode()): ASTNode() {
 }

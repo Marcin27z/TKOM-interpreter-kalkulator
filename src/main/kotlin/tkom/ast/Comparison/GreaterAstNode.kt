@@ -1,6 +1,7 @@
 package tkom.ast.Comparison
 
 import tkom.ast.ASTNode
+import tkom.ast.BinOpAstNode
 
-class GreaterAstNode(val leftOperand: ASTNode, val rightOperand: ASTNode): ASTNode() {
+class GreaterAstNode(leftOperand: ASTNode, rightOperand: ASTNode): BinOpAstNode(leftOperand, rightOperand) {
 }

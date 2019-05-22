@@ -1,5 +1,6 @@
 package tkom
 
+import tkom.interpreter.Interpreter
 import tkom.lexer.Lexer
 import tkom.parser.Parser
 import tkom.source.CommandLineSource
@@ -12,16 +13,6 @@ fun main(args: Array<String>) {
   } else {
     CommandLineSource(System.`in`)
   }
-  val lexer = Lexer(source)
-//  do {
-//    val token = lexer.getToken()
-//    println(token.toString())
-//  } while (token.tokenType != TokenType.EOT)
-  val parser = Parser(lexer, source)
-  var (errors, exitFlag) = parser.parse()
-  while (!exitFlag) {
-    val pair = parser.parse()
-    errors = pair.first
-    exitFlag = pair.second
-  }
+  val interpreter = Interpreter(source)
+  interpreter.run()
 }

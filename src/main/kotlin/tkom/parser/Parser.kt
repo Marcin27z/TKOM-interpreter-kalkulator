@@ -1,15 +1,13 @@
 package tkom.parser
 
+import tkom.ComplexNumber
 import tkom.Token
 import tkom.TokenType
 import tkom.ast.*
-import tkom.ast.Arithmetic.AddAstNode
-import tkom.ast.Arithmetic.DivideAstNode
-import tkom.ast.Arithmetic.MultiplyAstNode
-import tkom.ast.Arithmetic.SubtractAstNode
+import tkom.ast.Arithmetic.*
 import tkom.ast.Comparison.*
 import tkom.ast.Logical.AndAstNode
-import tkom.ast.Logical.FunctionCallAstNode
+import tkom.ast.FunctionCallAstNode
 import tkom.ast.Logical.NegationAstNode
 import tkom.ast.Logical.OrAstNode
 import tkom.lexer.Lexer
@@ -75,7 +73,7 @@ class Parser(private val lexer: Lexer, private val source: Source) {
     moveFlag = true
   }
 
-  fun parse(): Pair<Int, Boolean> {
+  fun parse(): Pair<Int, ASTNode> {
     print(">")
     val rootNode = operation()
     for (error in errorList) {
@@ -83,7 +81,7 @@ class Parser(private val lexer: Lexer, private val source: Source) {
     }
     source.reset()
     errorList.clear()
-    return Pair(errors, exitFlag)
+    return Pair(errors, rootNode)
   }
 
   fun operation(): ASTNode {
@@ -131,7 +129,7 @@ class Parser(private val lexer: Lexer, private val source: Source) {
         NopAstNode()
       }
       else -> {
-        val complexExpressionNode = comparisonExpression()
+        val complexExpressionNode = assignment()
         if (!accept(TokenType.LINE_BREAK) && !accept(TokenType.SEMICOLON)) {
           error(token, TokenType.SEMICOLON)
         }
@@ -182,7 +180,7 @@ class Parser(private val lexer: Lexer, private val source: Source) {
     expect(TokenType.OPEN_PARENTHESIS)
     val assignmentNode = assignment()
     expect(TokenType.SEMICOLON)
-    val comparisonExpressionNode = comparisonExpression()
+    val comparisonExpressionNode = assignment()
     expect(TokenType.SEMICOLON)
     val secondAssignmentNode = assignment()
     expect(TokenType.CLOSE_PARENTHESIS)
@@ -197,11 +195,18 @@ class Parser(private val lexer: Lexer, private val source: Source) {
   }
 
   fun assignment(): ASTNode {
-    expect(TokenType.IDENTIFIER)
-    val identifierNode = IdentifierAstNode(token.value)
-    expect(TokenType.ASSIGNMENT)
-    val complexExpressionNode = comparisonExpression()
-    return AssignmentAstNode(identifierNode, complexExpressionNode)
+//    expect(TokenType.IDENTIFIER)
+//    val identifierNode = IdentifierAstNode(token.value)
+//    expect(TokenType.ASSIGNMENT)
+//    val complexExpressionNode = comparisonExpression()
+//    return AssignmentAstNode(identifierNode, complexExpressionNode)
+    val identifierNode = comparisonExpression()
+    var assignmentNode = identifierNode
+    if (accept(TokenType.ASSIGNMENT)) {
+      val value = assignment()
+      assignmentNode = AssignmentAstNode(identifierNode, value)
+    }
+    return assignmentNode
   }
 
   fun comparisonExpression(): ASTNode {
@@ -235,7 +240,7 @@ class Parser(private val lexer: Lexer, private val source: Source) {
   }
 
   fun logicalExpression(): ASTNode {
-    val firstComplexExpressionNode = complexExpression()
+    val firstComplexExpressionNode = powerExpression()
     var logicalExpressionNode = firstComplexExpressionNode
     if (accept(TokenType.LOGICAL_AND)) {
       val secondComplexExpression = logicalExpression()
@@ -245,6 +250,17 @@ class Parser(private val lexer: Lexer, private val source: Source) {
       logicalExpressionNode = OrAstNode(firstComplexExpressionNode, secondComplexExpression)
     }
     return logicalExpressionNode
+  }
+
+  fun powerExpression(): ASTNode {
+//    println("complex expression")
+    val firstComplexExpressionNode = complexExpression()
+    var powerExpressionNode = firstComplexExpressionNode
+    if (accept(TokenType.POWER_OPERATOR)) {
+      val secondComplexExpressionNode = powerExpression()
+        powerExpressionNode = PowerAstNode(firstComplexExpressionNode, secondComplexExpressionNode)
+    }
+    return powerExpressionNode
   }
 
 
@@ -282,6 +298,8 @@ class Parser(private val lexer: Lexer, private val source: Source) {
               simpleExpressionNode = MultiplyAstNode(simpleExpressionNode, secondValueNode)
             } else if (operatorToken.value == "/") {
               simpleExpressionNode = DivideAstNode(simpleExpressionNode, secondValueNode)
+            } else if (operatorToken.value == "%") {
+              simpleExpressionNode = ModuloAstNode(simpleExpressionNode, secondValueNode)
             }
 
           } else {
@@ -300,7 +318,7 @@ class Parser(private val lexer: Lexer, private val source: Source) {
         while (accept(TokenType.OPEN_PARENTHESIS)) {
           parenthesis++
         }
-        val valueNode = comparisonExpression()
+        val valueNode = assignment()
         while (accept(TokenType.CLOSE_PARENTHESIS)) {
           parenthesis--
         }
@@ -331,9 +349,23 @@ class Parser(private val lexer: Lexer, private val source: Source) {
         NopAstNode()
       }
       accept(TokenType.EOT) -> {
-        NopAstNode()
+        EotNode()
+      }
+      accept(TokenType.ADDITIVE_OPERATOR) -> {
+        val valueNode: ASTNode
+        val operatorToken = token
+        val value = value()
+        if (operatorToken.value == "+") {
+          valueNode = AddAstNode(ValueAstNode(ComplexNumber.ZERO), value)
+        } else {
+          valueNode = SubtractAstNode(ValueAstNode(ComplexNumber.ZERO), value)
+        }
+        valueNode
       }
       else -> {
+        errorList.add(UnexpectedTokenError(token))
+        move()
+        advance()
         NopAstNode()
       }
     }
@@ -342,7 +374,7 @@ class Parser(private val lexer: Lexer, private val source: Source) {
   fun returnn(): ASTNode {
 //    println("return")
     return if (!accept(TokenType.CLOSE_BRACE)) {
-      ReturnAstNode(comparisonExpression())
+      ReturnAstNode(assignment())
     } else {
       ReturnAstNode()
     }
@@ -351,7 +383,7 @@ class Parser(private val lexer: Lexer, private val source: Source) {
   fun iff(): ASTNode {
 //    println("if")
     expect(TokenType.OPEN_PARENTHESIS)
-    val conditionNode = comparisonExpression()
+    val conditionNode = assignment()
     expect(TokenType.CLOSE_PARENTHESIS)
     expect(TokenType.OPEN_BRACE)
     expect(TokenType.LINE_BREAK)
@@ -382,11 +414,13 @@ class Parser(private val lexer: Lexer, private val source: Source) {
 
   fun breakk(): ASTNode {
     expect(TokenType.BREAK_KEYWORD)
+    expect(TokenType.LINE_BREAK)
     return BreakAstNode()
   }
 
   fun continuee(): ASTNode {
     expect(TokenType.CONTINUE_KEYWORD)
+    expect(TokenType.LINE_BREAK)
     return ContinueAstNode()
   }
 
@@ -396,12 +430,25 @@ class Parser(private val lexer: Lexer, private val source: Source) {
   }
 }
 
-class ParseError(
+open class ParseError(
     private val token: Token,
     private val tokenType: TokenType
 ) {
 
-  fun printError(sourceCharacters: String) {
+  open fun printError(sourceCharacters: String) {
+    val line = token.position.line
+    val sourceLine = sourceCharacters.split("\n")[line]
+    println(sourceLine)
+    repeat(token.position.column) {
+      print(" ")
+    }
+    println("^")
+    println("line: ${token.position.line}, column: ${token.position.column} expected $tokenType")
+  }
+}
+
+class UnexpectedTokenError(val token: Token): ParseError(token, token.tokenType) {
+  override fun printError(sourceCharacters: String) {
     val line = token.position.line
     val sourceLine = sourceCharacters.split("\n")[line]
     println(sourceLine)
@@ -409,6 +456,6 @@ class ParseError(
       print(" ")
     }
     println("^")
-    println("line: ${token.position.line}, column: ${token.position.column} expectd $tokenType")
+    println("line: ${token.position.line}, column: ${token.position.column} unexpected token: ${token.value}")
   }
 }

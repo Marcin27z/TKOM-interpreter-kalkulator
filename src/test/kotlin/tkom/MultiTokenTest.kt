@@ -32,4 +32,14 @@ class MultiTokenTest {
       println(token)
     } while (token.tokenType != TokenType.EOT)
   }
+
+  @Test
+  fun test3() {
+    val source = CommandLineSource("5 && 5\u0000".byteInputStream())
+    val lexer = Lexer(source)
+    do {
+      val token = lexer.getToken()
+      println(token)
+    } while (token.tokenType != TokenType.EOT)
+  }
 }

@@ -1,6 +1,7 @@
 package tkom.ast.Arithmetic
 
 import tkom.ast.ASTNode
+import tkom.ast.BinOpAstNode
 
-class SubtractAstNode(val leftOperand: ASTNode, val rightOperand: ASTNode): ASTNode() {
+class SubtractAstNode(leftOperand: ASTNode, rightOperand: ASTNode): BinOpAstNode(leftOperand, rightOperand) {
 }

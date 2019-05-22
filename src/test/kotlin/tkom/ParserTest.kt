@@ -171,8 +171,8 @@ class ParserTest {
   }
 
   @Test
-  fun test18() {
-    val testProgram = "5 * 5 * 5 + 4\n"
+  fun test19() {
+    val testProgram = "a - -5\n"
     val source = CommandLineSource(testProgram.byteInputStream())
     val lexer = Lexer(source)
     val parser = Parser(lexer, source)

@@ -225,7 +225,7 @@ class Lexer(private val source: Source) {
 
   private fun gotCircumflexAccent(start: Position): Token { // ^
     source.moveToNext()
-    return Token(position = Position(start), value = "^", tokenType = TokenType.MULTIPLICATIVE_OPERATOR) // na pewno?
+    return Token(position = Position(start), value = "^", tokenType = TokenType.POWER_OPERATOR)
   }
 
   private fun gotMultiplicationSign(start: Position): Token { // *
@@ -295,10 +295,12 @@ class Lexer(private val source: Source) {
 
   private fun gotAmpersand(start: Position): Token { // &
     val position = Position(start)
-    return if (source.getNextChar().char != '&')
+    return if (source.getNextChar().char != '&') {
       throw InvalidCharacterException()
-    else
+    } else {
+      source.moveToNext()
       Token(position = position, value = "&&", tokenType = TokenType.LOGICAL_AND)
+    }
   }
 
   private fun gotPipe(start: Position): Token { // |
