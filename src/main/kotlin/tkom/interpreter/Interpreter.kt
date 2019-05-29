@@ -21,6 +21,7 @@ import tkom.lexer.Lexer
 import tkom.parser.Parser
 import tkom.semchecker.SemChecker
 import tkom.source.Source
+import java.lang.Math.sqrt
 
 class Interpreter(source: Source) {
 
@@ -110,6 +111,9 @@ class Interpreter(source: Source) {
       }
       "println" -> {
         println((interpret(node.argumentsList.callArguments[0]) as ValueAstNode).value)
+      }
+      "sqrt" -> {
+        return ValueAstNode(ComplexNumber(sqrt(((interpret(node.argumentsList.callArguments[0]) as ValueAstNode).value).realPart)))
       }
     }
     return NopAstNode()

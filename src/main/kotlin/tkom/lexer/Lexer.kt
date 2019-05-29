@@ -26,7 +26,7 @@ class Lexer(private val source: Source) {
   }
 
   private fun initBuiltInFunctions() {
-    builtInFunctionsSet.addAll(listOf("print", "println"))
+    builtInFunctionsSet.addAll(listOf("print", "println", "sqrt"))
   }
 
   private fun initSpecialWords() {

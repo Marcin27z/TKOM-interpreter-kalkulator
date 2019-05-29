@@ -23,6 +23,7 @@ class SemChecker private constructor(private val builtInFunction: HashMap<String
   private fun initBuiltInFunctions() {
     builtInFunction["print"] = 1
     builtInFunction["println"] = 1
+    builtInFunction["sqrt"] = 1
   }
 
   private fun getBuiltInFunctionArgumentNumber(identifier: String): Int? {
