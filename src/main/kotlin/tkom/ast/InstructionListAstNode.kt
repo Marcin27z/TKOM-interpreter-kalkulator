@@ -1,4 +1,3 @@
 package tkom.ast
 
-class InstructionListAstNode(val instructionList: ArrayList<ASTNode>): ASTNode() {
-}
+class InstructionListAstNode(val instructionList: ArrayList<ASTNode>) : ASTNode()

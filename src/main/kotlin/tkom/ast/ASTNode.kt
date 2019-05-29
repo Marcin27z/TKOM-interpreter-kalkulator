@@ -1,5 +1,3 @@
 package tkom.ast
 
-open class ASTNode {
-
-}
+open class ASTNode

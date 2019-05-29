@@ -1,4 +1,3 @@
 package tkom.ast
 
-class IdentifierAstNode(val identifier: String): ASTNode() {
-}
+class IdentifierAstNode(val identifier: String) : ASTNode()

@@ -1,12 +1,9 @@
 package tkom.lexer
 
-import tkom.Token
 import tkom.Position
+import tkom.Token
 import tkom.TokenType
 import tkom.source.Source
-import java.lang.Exception
-import java.lang.NullPointerException
-import java.lang.StringBuilder
 import java.math.BigDecimal
 import java.math.RoundingMode
 
@@ -195,7 +192,7 @@ class Lexer(private val source: Source) {
         }
         token
       }
-      builtInFunctionsSet.contains(builtString) -> Token(position = position, value = builtString, tokenType = TokenType.IDENTIFIER)
+      builtInFunctionsSet.contains(builtString) -> Token(position = position, value = builtString, tokenType = TokenType.BUILT_IN_FUNCTION)
       specialWordsSet.contains(builtString) -> Token(position = position, value = builtString, tokenType = TokenType.EOT)
       else -> Token(position = position, value = builtString, tokenType = TokenType.IDENTIFIER)
     }
@@ -328,6 +325,4 @@ class Lexer(private val source: Source) {
   }
 }
 
-class InvalidCharacterException : Exception() {
-
-}
+class InvalidCharacterException : Exception()

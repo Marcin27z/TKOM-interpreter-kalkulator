@@ -1,8 +1,6 @@
 package tkom
 
 import tkom.interpreter.Interpreter
-import tkom.lexer.Lexer
-import tkom.parser.Parser
 import tkom.source.CommandLineSource
 import java.io.File
 import java.io.FileInputStream

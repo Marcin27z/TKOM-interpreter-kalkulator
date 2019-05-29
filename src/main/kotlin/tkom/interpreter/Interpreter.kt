@@ -4,12 +4,19 @@ import tkom.ComplexNumber
 import tkom.ComplexNumber.Companion.FALSE
 import tkom.ComplexNumber.Companion.TRUE
 import tkom.ast.*
-import tkom.ast.Arithmetic.*
-import tkom.ast.Comparison.*
-import tkom.ast.Logical.AndAstNode
-import tkom.ast.FunctionCallAstNode
-import tkom.ast.Logical.NegationAstNode
-import tkom.ast.Logical.OrAstNode
+import tkom.ast.binop.BinOpAstNode
+import tkom.ast.binop.arithmetic.*
+import tkom.ast.binop.comparison.*
+import tkom.ast.binop.logical.AndAstNode
+import tkom.ast.binop.logical.NegationAstNode
+import tkom.ast.binop.logical.OrAstNode
+import tkom.ast.function.BuiltInFunctionCallAstNode
+import tkom.ast.function.FunctionCallAstNode
+import tkom.ast.function.FunctionDefinitionAstNode
+import tkom.ast.function.ReturnAstNode
+import tkom.ast.loop.BreakAstNode
+import tkom.ast.loop.ContinueAstNode
+import tkom.ast.loop.LoopAstNode
 import tkom.lexer.Lexer
 import tkom.parser.Parser
 import tkom.semchecker.SemChecker
@@ -19,7 +26,7 @@ class Interpreter(source: Source) {
 
   private val lexer: Lexer = Lexer(source)
   private val parser: Parser
-  private val context = Context()
+  private var context = Context()
   private val semChecker = SemChecker()
 
   init {
@@ -28,6 +35,7 @@ class Interpreter(source: Source) {
 
   fun run() {
     while (true) {
+      print(">")
       val (errors, rootNode) = parser.parse()
       if (rootNode is EotNode) {
         break
@@ -53,45 +61,196 @@ class Interpreter(source: Source) {
 
   private fun interpret(node: ASTNode): ASTNode {
     return when (node) {
+      is BinOpAstNode -> {
+        executeBinOp(node)
+      }
+      is ValueAstNode, is NotPrintableValueAstNode -> {
+        executeValue(node)
+      }
+      is AssignmentAstNode -> {
+        executeAssignment(node)
+      }
+      is IdentifierAstNode -> {
+        executeIdentifier(node)
+      }
+      is NegationAstNode -> {
+        executeNegation(node)
+      }
+      is InstructionListAstNode -> {
+        executeInstructionList(node)
+      }
+      is IfAstNode -> {
+        executeIf(node)
+      }
+      is FunctionDefinitionAstNode -> {
+        executeFunctionDefinition(node)
+      }
+      is FunctionCallAstNode -> {
+        executeFunctionCall(node)
+      }
+      is BuiltInFunctionCallAstNode -> {
+        executeBuiltInFunction(node)
+      }
+      is ReturnAstNode -> {
+        executeReturn(node)
+      }
+      is LoopAstNode -> {
+        executeLoop(node)
+      }
+      else -> {
+        NopAstNode()
+      }
+    }
+  }
+
+  private fun executeBuiltInFunction(node: BuiltInFunctionCallAstNode): ASTNode {
+    when (node.identifier.identifier) {
+      "print" -> {
+        print((interpret(node.argumentsList.callArguments[0]) as ValueAstNode).value)
+      }
+      "println" -> {
+        println((interpret(node.argumentsList.callArguments[0]) as ValueAstNode).value)
+      }
+    }
+    return NopAstNode()
+  }
+
+  private fun executeReturn(node: ReturnAstNode): ASTNode {
+    return interpret(node.value)
+  }
+
+  private fun executeValue(node: ASTNode): ASTNode {
+    return node
+  }
+
+  private fun executeIdentifier(node: IdentifierAstNode): ASTNode {
+    return ValueAstNode(ComplexNumber(context.getVariable(node.identifier)!!))
+  }
+
+  private fun executeNegation(node: NegationAstNode): ASTNode {
+    val valueToNegate = (interpret(node.negatedNode) as ValueAstNode).value
+    return ValueAstNode(valueToNegate.negate())
+  }
+
+  private fun executeLoop(node: LoopAstNode): ASTNode {
+    // new context
+    val savedVariableIdentifier = ((node.assignment as AssignmentAstNode).identifier as IdentifierAstNode).identifier
+    val savedVariable = context.getVariable(savedVariableIdentifier)
+    interpret(node.assignment)
+    while ((interpret(node.endCondition) as ValueAstNode).value.isTrue()) {
+      val result = interpret(node.instructionList)
+      if (result is BreakAstNode) {
+        break
+      }
+      interpret(node.stepAssignment)
+    }
+    // restore context
+    if (savedVariable == null) {
+      context.deleteVariable(savedVariableIdentifier)
+    } else {
+      context.setVariable(savedVariableIdentifier, savedVariable)
+    }
+    return NopAstNode()
+  }
+
+  private fun executeFunctionCall(node: FunctionCallAstNode): ASTNode {
+    val (arguments, instructionNode) = context.getFunction(node.identifier.identifier)!!
+    // new context
+    val oldContext = context
+    val newContext = Context(oldContext)
+    node.argumentsList.callArguments.forEachIndexed { i, argument ->
+      run {
+        val value = (interpret(argument) as ValueAstNode).value
+        newContext.setVariable((arguments.arguments[i] as IdentifierAstNode).identifier, value)
+      }
+    }
+    context = newContext
+    val result = interpret(instructionNode)
+    val callResult = if (result is ReturnAstNode) {
+      interpret(result)
+    } else {
+      result
+    }
+    // restore context
+    context = oldContext
+    return callResult
+  }
+
+  private fun executeFunctionDefinition(node: FunctionDefinitionAstNode): ASTNode {
+    context.setFunction(node.identifier.identifier, node.arguments, node.instructionList)
+    return NopAstNode()
+  }
+
+  private fun executeIf(node: IfAstNode): ASTNode {
+    var retNode: ASTNode = NopAstNode()
+    when {
+      (interpret(node.condition) as ValueAstNode).value == TRUE -> {
+        val result = interpret(node.instructionList)
+        if (result is ReturnAstNode || result is ContinueAstNode || result is BreakAstNode) {
+          retNode = result
+        }
+
+      }
+      node.elseNode != null -> {
+        val result = interpret(node.elseNode)
+        if (result is ReturnAstNode || result is ContinueAstNode || result is BreakAstNode) {
+          retNode = result
+        }
+      }
+    }
+    return retNode
+  }
+
+  private fun executeInstructionList(node: InstructionListAstNode): ASTNode {
+    var retNode: ASTNode = NopAstNode()
+    for (instruction in node.instructionList) {
+      if (instruction is ReturnAstNode || instruction is ContinueAstNode || instruction is BreakAstNode) {
+        retNode = instruction
+        break
+      }
+      retNode = interpret(instruction)
+      if (retNode is ReturnAstNode || retNode is ContinueAstNode || retNode is BreakAstNode) {
+        break
+      }
+    }
+    return retNode
+  }
+
+  private fun executeAssignment(node: AssignmentAstNode): ASTNode {
+    val valueNode = (interpret(node.value) as ValueAstNode)
+    context.setVariable((node.identifier as IdentifierAstNode).identifier, valueNode.value)
+    return NotPrintableValueAstNode(valueNode.value)
+  }
+
+  private fun executeBinOp(node: BinOpAstNode): ASTNode {
+    val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
+    val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
+    return when (node) {
       is AddAstNode -> {
-        val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-        val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
         ValueAstNode(leftValue.add(rightValue))
       }
       is SubtractAstNode -> {
-        val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-        val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
         ValueAstNode(leftValue.subtract(rightValue))
       }
       is MultiplyAstNode -> {
-        val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-        val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
         ValueAstNode(leftValue.multiply(rightValue))
       }
       is DivideAstNode -> {
-        val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-        val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
         ValueAstNode(leftValue.divide(rightValue))
       }
       is ModuloAstNode -> {
-        val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-        val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
         ValueAstNode(leftValue.modulo(rightValue))
       }
       is PowerAstNode -> {
-        val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-        val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
         ValueAstNode(leftValue.power(rightValue))
       }
-      is ValueAstNode -> {
-        node
+      is AndAstNode -> {
+        ValueAstNode(leftValue.and(rightValue))
       }
-      is NotPrintableValueAstNode -> {
-        node
+      is OrAstNode -> {
+        ValueAstNode(leftValue.or(rightValue))
       }
       is GreaterAstNode -> {
-        val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-        val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
         if (leftValue > rightValue) {
           ValueAstNode(TRUE)
         } else {
@@ -99,8 +258,6 @@ class Interpreter(source: Source) {
         }
       }
       is GreaterOrEqualAstNode -> {
-        val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-        val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
         if (leftValue >= rightValue) {
           ValueAstNode(TRUE)
         } else {
@@ -108,8 +265,6 @@ class Interpreter(source: Source) {
         }
       }
       is LessAstNode -> {
-        val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-        val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
         if (leftValue < rightValue) {
           ValueAstNode(TRUE)
         } else {
@@ -117,8 +272,6 @@ class Interpreter(source: Source) {
         }
       }
       is LessOrEqualAstNode -> {
-        val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-        val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
         if (leftValue <= rightValue) {
           ValueAstNode(TRUE)
         } else {
@@ -126,8 +279,6 @@ class Interpreter(source: Source) {
         }
       }
       is EqualAstNode -> {
-        val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-        val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
         if (leftValue == rightValue) {
           ValueAstNode(TRUE)
         } else {
@@ -135,89 +286,43 @@ class Interpreter(source: Source) {
         }
       }
       is NotEqualAstNode -> {
-        val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-        val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
         if (leftValue != rightValue) {
           ValueAstNode(TRUE)
         } else {
           ValueAstNode(FALSE)
         }
       }
-      is AssignmentAstNode -> {
-        val valueNode = (interpret(node.value) as ValueAstNode)
-        context.setVariable((node.identifier as IdentifierAstNode).identifier, valueNode.value)
-        return NotPrintableValueAstNode(valueNode.value)
-      }
-      is IdentifierAstNode -> {
-        return ValueAstNode(ComplexNumber(context.getVariable(node.identifier)!!))
-      }
-      is AndAstNode -> {
-        val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-        val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
-        ValueAstNode(leftValue.and(rightValue))
-      }
-      is OrAstNode -> {
-        val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-        val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
-        ValueAstNode(leftValue.or(rightValue))
-      }
-      is NegationAstNode -> {
-        val valueToNegate = (interpret(node.negatedNode) as ValueAstNode).value
-        ValueAstNode(valueToNegate.negate())
-      }
-      is InstructionListAstNode -> {
-        var retNode: ASTNode = NopAstNode()
-        for (instruction in node.instructionList) {
-          retNode = interpret(instruction)
-        }
-        retNode
-      }
-      is IfAstNode -> {
-        when {
-          (interpret(node.condition) as ValueAstNode).value == TRUE -> {
-            interpret(node.instructionList)
-            NopAstNode()
-          }
-          node.elseNode != null -> {
-            interpret(node.elseNode)
-            NopAstNode()
-          }
-          else -> NopAstNode()
-        }
-      }
-      is FunctionDefinitionAstNode -> {
-        context.setFunction((node.identifier as IdentifierAstNode).identifier, node.arguments, node.instructionList)
-        NopAstNode()
-      }
-      is FunctionCallAstNode -> {
-        val (arguments, instructionNode) = context.getFunction((node.identifier as IdentifierAstNode).identifier)!!
-        // new context
-        (node.argumentsList as CallArgumentsListAstNode).callArguments.forEachIndexed { i, argument ->
-          run {
-            val value = (interpret(argument) as ValueAstNode).value
-            context.setVariable(((arguments as ArgumentsListAstNode).arguments[i] as IdentifierAstNode).identifier, value)
-          }
-        }
-        interpret(instructionNode)
-        // restore context
-      }
-      is ReturnAstNode -> {
-        interpret(node.value)
-      }
-      is LoopAstNode -> {
-        // new context
-        interpret(node.assignment)
-        while ((interpret(node.endCondition) as ValueAstNode).value.isTrue()) {
-          interpret(node.instructionList)
-          interpret(node.stepAssignment)
-        }
-        // restore context
-        NopAstNode()
-      }
       else -> {
         NopAstNode()
       }
     }
+  }
+
+  fun singleTestRun(): ComplexNumber {
+    var resultNumber = ComplexNumber.ZERO
+    while (true) {
+      val (errors, rootNode) = parser.parse()
+      if (rootNode is EotNode) {
+        break
+      } else {
+        if (errors > 0) {
+          continue
+        }
+        semChecker.semCheck(rootNode)
+        if (semChecker.errorList.size > 0) {
+          for (error in semChecker.errorList) {
+            println(error)
+          }
+          semChecker.errorList.clear()
+        } else {
+          val result = interpret(rootNode)
+          if (result is ValueAstNode && result !is NotPrintableValueAstNode) {
+            resultNumber = result.value
+          }
+        }
+      }
+    }
+    return resultNumber
   }
 
 

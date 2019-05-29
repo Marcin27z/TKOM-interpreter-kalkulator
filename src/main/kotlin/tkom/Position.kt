@@ -2,7 +2,7 @@ package tkom
 
 class Position(var line: Int = 0, var column: Int = 0, var index: Int = 0) {
 
-  constructor(position: Position): this(position.line, position.column, position.index)
+  constructor(position: Position) : this(position.line, position.column, position.index)
 
   fun reset() {
     line = 0

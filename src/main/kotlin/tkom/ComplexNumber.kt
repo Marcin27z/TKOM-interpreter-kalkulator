@@ -2,9 +2,9 @@ package tkom
 
 import kotlin.math.pow
 
-class ComplexNumber(var realPart: Double = 0.0, var imaginaryPart: Double = 0.0): Comparable<ComplexNumber> {
+class ComplexNumber(var realPart: Double = 0.0, var imaginaryPart: Double = 0.0) : Comparable<ComplexNumber> {
 
-  constructor(complexNumber: ComplexNumber): this(complexNumber.realPart, complexNumber.imaginaryPart)
+  constructor(complexNumber: ComplexNumber) : this(complexNumber.realPart, complexNumber.imaginaryPart)
 
   override fun compareTo(other: ComplexNumber): Int {
     return when {
@@ -21,15 +21,11 @@ class ComplexNumber(var realPart: Double = 0.0, var imaginaryPart: Double = 0.0)
   }
 
   fun add(complexNumber: ComplexNumber): ComplexNumber {
-    realPart += complexNumber.realPart
-    imaginaryPart += complexNumber.imaginaryPart
-    return this
+    return ComplexNumber(realPart + complexNumber.realPart, imaginaryPart + complexNumber.imaginaryPart)
   }
 
   fun subtract(complexNumber: ComplexNumber): ComplexNumber {
-    realPart -= complexNumber.realPart
-    imaginaryPart -= complexNumber.imaginaryPart
-    return this
+    return ComplexNumber(realPart - complexNumber.realPart, imaginaryPart - complexNumber.imaginaryPart)
   }
 
   fun multiply(complexNumber: ComplexNumber): ComplexNumber {
@@ -42,9 +38,7 @@ class ComplexNumber(var realPart: Double = 0.0, var imaginaryPart: Double = 0.0)
   fun divide(complexNumber: ComplexNumber): ComplexNumber {
     val numerator = this.multiply(complexNumber.conjugate())
     val denominator = complexNumber.multiply(complexNumber.conjugate())
-    this.realPart = numerator.realPart / denominator.realPart
-    this.imaginaryPart = numerator.imaginaryPart / denominator.realPart
-    return this
+    return ComplexNumber(numerator.realPart / denominator.realPart, numerator.imaginaryPart / denominator.realPart)
   }
 
   fun modulo(complexNumber: ComplexNumber): ComplexNumber {
@@ -91,6 +85,11 @@ class ComplexNumber(var realPart: Double = 0.0, var imaginaryPart: Double = 0.0)
     return ComplexNumber(realPart, -imaginaryPart)
   }
 
+  fun set(complexNumber: ComplexNumber) {
+    this.realPart = complexNumber.realPart
+    this.imaginaryPart = complexNumber.imaginaryPart
+  }
+
   override fun toString(): String {
     return when {
       imaginaryPart == 0.0 -> realPart.toString()
@@ -104,6 +103,11 @@ class ComplexNumber(var realPart: Double = 0.0, var imaginaryPart: Double = 0.0)
         }
       }
     }
+  }
+
+  fun opposite() {
+    this.realPart = -this.realPart
+    this.imaginaryPart = -this.imaginaryPart
   }
 
   override fun equals(other: Any?): Boolean {

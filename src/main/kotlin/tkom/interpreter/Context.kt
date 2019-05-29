@@ -2,11 +2,20 @@ package tkom.interpreter
 
 import tkom.ComplexNumber
 import tkom.ast.ASTNode
+import tkom.ast.function.ArgumentsListAstNode
 
-class Context : Cloneable {
+class Context private constructor(private val functions: HashMap<String, Pair<ArgumentsListAstNode, ASTNode>>) {
+
+  constructor() : this(HashMap())
+
+  constructor(context: Context) : this(context.functions)
 
   private val variables = HashMap<String, ComplexNumber>()
-  private val functions = HashMap<String, Pair<ASTNode, ASTNode>>()
+
+
+  fun deleteVariable(identifier: String) {
+    variables.remove(identifier)
+  }
 
   fun setVariable(identifier: String, value: ComplexNumber) {
     variables[identifier] = value
@@ -16,19 +25,11 @@ class Context : Cloneable {
     return variables[identifier]
   }
 
-  fun setFunction(identifier: String, arguments: ASTNode, functionRootNode: ASTNode) {
+  fun setFunction(identifier: String, arguments: ArgumentsListAstNode, functionRootNode: ASTNode) {
     functions[identifier] = Pair(arguments, functionRootNode)
   }
 
-  fun getFunction(identifier: String): Pair<ASTNode, ASTNode>? {
+  fun getFunction(identifier: String): Pair<ArgumentsListAstNode, ASTNode>? {
     return functions[identifier]
-  }
-
-  override fun clone(): Any {
-    val context = Context()
-    for (variable in variables) {
-      context.setVariable(variable.key, variable.value)
-    }
-    return context
   }
 }

@@ -1,4 +1,3 @@
 package tkom.ast
 
-class NopAstNode: ASTNode() {
-}
+class NopAstNode : ASTNode()

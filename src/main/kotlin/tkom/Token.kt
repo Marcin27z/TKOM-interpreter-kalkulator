@@ -1,10 +1,10 @@
 package tkom
 
-class Token (
+class Token(
 
-  var value: String = "",
-  var position: Position = Position(),
-  var tokenType: TokenType= TokenType.EMPTY
+    var value: String = "",
+    var position: Position = Position(),
+    var tokenType: TokenType = TokenType.EMPTY
 
 ) {
   var complexNumber = ComplexNumber()

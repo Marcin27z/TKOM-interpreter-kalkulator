@@ -1,4 +1,3 @@
 package tkom.ast
 
-class EotNode: ASTNode() {
-}
+class EotNode : ASTNode()
