@@ -328,6 +328,4 @@ class Interpreter(source: Source) {
     }
     return resultNumber
   }
-
-
 }

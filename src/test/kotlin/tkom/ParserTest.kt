@@ -38,7 +38,7 @@ class ParserTest {
 
   @Test
   fun test4() {
-    val testProgram = "fun a(b, c) { \nx = b * c; return x; }\n"
+    val testProgram = "fun a(b, c) { \nx = b * c\n return x\n }\n"
     val source = CommandLineSource(testProgram.byteInputStream())
     val lexer = Lexer(source)
     val parser = Parser(lexer, source)
@@ -47,7 +47,7 @@ class ParserTest {
 
   @Test
   fun test5() {
-    val testProgram = "fun a() {\n x = b * c; return x; }\n"
+    val testProgram = "fun a() {\n x = b * c\n return x\n }\n"
     val source = CommandLineSource(testProgram.byteInputStream())
     val lexer = Lexer(source)
     val parser = Parser(lexer, source)
@@ -56,7 +56,7 @@ class ParserTest {
 
   @Test
   fun test6() {
-    val testProgram = "fun a() {\n x b * c; return x; }\n"
+    val testProgram = "fun a() {\n x b * c\n return x\n }\n"
     val source = CommandLineSource(testProgram.byteInputStream())
     val lexer = Lexer(source)
     val parser = Parser(lexer, source)

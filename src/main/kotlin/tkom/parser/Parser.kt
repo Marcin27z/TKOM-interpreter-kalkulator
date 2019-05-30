@@ -60,28 +60,45 @@ class Parser(private val lexer: Lexer, private val source: Source) {
   }
 
   fun parse(): Pair<Int, ASTNode> {
-    errors = 0
-    val rootNode = operation()
+    val rootNode = operations()
     for (error in errorList) {
       error.printError(source.getRawInput())
     }
+    errors = errorList.size
     source.reset()
     errorList.clear()
     return Pair(errors, rootNode)
   }
 
-  private fun operation(): ASTNode {
+  private fun operations(): ASTNode {
     return when {
       accept(TokenType.FUN_KEYWORD) -> {
         functionDefinition()
       }
       accept(TokenType.LINE_BREAK) -> {
-        operation()
+        NopAstNode()
       }
       else -> {
-        instruction()
+        operation()
       }
     }
+  }
+
+  private fun operation(): ASTNode {
+    return when {
+      accept(TokenType.LINE_BREAK) -> {
+        NopAstNode()
+      }
+      else -> {
+        var operationNode = instruction()
+          if (!accept(TokenType.LINE_BREAK) && operationNode !is EotNode) {
+            error(token, TokenType.LINE_BREAK)
+            operationNode = InstructionListAstNode(arrayListOf(operationNode, operation()))
+          }
+        operationNode
+      }
+    }
+
   }
 
   private fun instruction(): ASTNode {
@@ -103,9 +120,6 @@ class Parser(private val lexer: Lexer, private val source: Source) {
       }
       else -> {
         val complexExpressionNode = assignment()
-        if (complexExpressionNode !is EotNode && !accept(TokenType.LINE_BREAK) && !accept(TokenType.SEMICOLON)) {
-          error(token, TokenType.SEMICOLON)
-        }
         complexExpressionNode
       }
     }
@@ -121,7 +135,7 @@ class Parser(private val lexer: Lexer, private val source: Source) {
     expect(TokenType.LINE_BREAK)
     val instructionNodes = arrayListOf<ASTNode>()
     while (!accept(TokenType.CLOSE_BRACE)) {
-      instructionNodes.add(instruction())
+      instructionNodes.add(operation())
     }
     expect(TokenType.LINE_BREAK)
     return FunctionDefinitionAstNode(identifierNode, argumentsNode, InstructionListAstNode(instructionNodes))
@@ -163,9 +177,8 @@ class Parser(private val lexer: Lexer, private val source: Source) {
     expect(TokenType.LINE_BREAK)
     val instructionNodes = arrayListOf<ASTNode>()
     while (!accept(TokenType.CLOSE_BRACE)) {
-      instructionNodes.add(instruction())
+      instructionNodes.add(operation())
     }
-    expect(TokenType.LINE_BREAK)
     return LoopAstNode(assignmentNode, comparisonExpressionNode, secondAssignmentNode, InstructionListAstNode(instructionNodes))
   }
 
@@ -334,9 +347,6 @@ class Parser(private val lexer: Lexer, private val source: Source) {
     return if (!accept(TokenType.CLOSE_BRACE)) {
       ReturnAstNode(assignment())
     } else {
-      if (!accept(TokenType.LINE_BREAK) && !accept(TokenType.SEMICOLON)) {
-        error(token, TokenType.SEMICOLON)
-      }
       ReturnAstNode()
     }
   }
@@ -350,7 +360,7 @@ class Parser(private val lexer: Lexer, private val source: Source) {
     expect(TokenType.LINE_BREAK)
     val instructionsNodes = arrayListOf<ASTNode>()
     while (!accept(TokenType.CLOSE_BRACE)) {
-      instructionsNodes.add(instruction())
+      instructionsNodes.add(operation())
     }
     return if (accept(TokenType.ELSE_KEYWORD)) {
       val elseNode: ASTNode
@@ -361,30 +371,25 @@ class Parser(private val lexer: Lexer, private val source: Source) {
         expect(TokenType.LINE_BREAK)
         val instructionsNodes = arrayListOf<ASTNode>()
         while (!accept(TokenType.CLOSE_BRACE)) {
-          instructionsNodes.add(instruction())
+          instructionsNodes.add(operation())
         }
         elseNode = InstructionListAstNode(instructionsNodes)
-        expect(TokenType.LINE_BREAK)
       }
       IfAstNode(conditionNode, InstructionListAstNode(instructionsNodes), elseNode)
     } else {
-      expect(TokenType.LINE_BREAK)
       IfAstNode(conditionNode, InstructionListAstNode(instructionsNodes))
     }
   }
 
   private fun breakk(): ASTNode {
-    expect(TokenType.LINE_BREAK)
     return BreakAstNode()
   }
 
   private fun continuee(): ASTNode {
-    expect(TokenType.LINE_BREAK)
     return ContinueAstNode()
   }
 
   private fun error(token: Token, tokenType: TokenType) {
-    errors++
     errorList.add(ParseError(token, tokenType))
   }
 }
@@ -398,7 +403,7 @@ open class ParseError(
     val line = token.position.line
     val sourceLine = sourceCharacters.split("\n")[line]
     println(sourceLine)
-    repeat(token.position.column) {
+    repeat(token.position.column - 1) {
       print(" ")
     }
     println("^")
@@ -406,12 +411,12 @@ open class ParseError(
   }
 }
 
-class UnexpectedTokenError(val token: Token) : ParseError(token, token.tokenType) {
+class UnexpectedTokenError(private val token: Token) : ParseError(token, token.tokenType) {
   override fun printError(sourceCharacters: String) {
     val line = token.position.line
     val sourceLine = sourceCharacters.split("\n")[line]
     println(sourceLine)
-    repeat(token.position.column) {
+    repeat(token.position.column - 1) {
       print(" ")
     }
     println("^")

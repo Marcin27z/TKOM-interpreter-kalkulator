@@ -110,7 +110,7 @@ class InterpreterTest {
     val originalOut = System.out
     val outContent = ByteArrayOutputStream()
     System.setOut(PrintStream(outContent))
-    val testProgram = "a = 5; print(a);"
+    val testProgram = "a = 5\n print(a)\n"
     val source = CommandLineSource(testProgram.byteInputStream())
     val interpreter = Interpreter(source)
     interpreter.singleTestRun()
