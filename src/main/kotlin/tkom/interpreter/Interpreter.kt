@@ -1,8 +1,10 @@
 package tkom.interpreter
 
+import org.omg.PortableInterceptor.NON_EXISTENT
 import tkom.ComplexNumber
 import tkom.ComplexNumber.Companion.FALSE
 import tkom.ComplexNumber.Companion.TRUE
+import tkom.ComplexNumber.Companion.ZERO
 import tkom.ast.*
 import tkom.ast.binop.BinOpAstNode
 import tkom.ast.binop.arithmetic.*
@@ -221,9 +223,15 @@ class Interpreter(source: Source) {
   }
 
   private fun executeAssignment(node: AssignmentAstNode): ASTNode {
-    val valueNode = (interpret(node.value) as ValueAstNode)
-    context.setVariable((node.identifier as IdentifierAstNode).identifier, valueNode.value)
-    return NotPrintableValueAstNode(valueNode.value)
+    val possibleValue = interpret(node.value)
+    return if (possibleValue is NopAstNode) {
+      context.setVariable((node.identifier as IdentifierAstNode).identifier, ZERO)
+      NotPrintableValueAstNode(ZERO)
+    } else {
+      val valueNode = (possibleValue as ValueAstNode)
+      context.setVariable((node.identifier as IdentifierAstNode).identifier, valueNode.value)
+      NotPrintableValueAstNode(valueNode.value)
+    }
   }
 
   private fun executeBinOp(node: BinOpAstNode): ASTNode {
