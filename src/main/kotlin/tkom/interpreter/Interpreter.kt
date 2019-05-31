@@ -1,6 +1,5 @@
 package tkom.interpreter
 
-import org.omg.PortableInterceptor.NON_EXISTENT
 import tkom.ComplexNumber
 import tkom.ComplexNumber.Companion.FALSE
 import tkom.ComplexNumber.Companion.TRUE
@@ -22,6 +21,7 @@ import tkom.ast.loop.LoopAstNode
 import tkom.lexer.Lexer
 import tkom.parser.Parser
 import tkom.semchecker.SemChecker
+import tkom.source.CommandLineSource
 import tkom.source.Source
 import java.lang.Math.sqrt
 
@@ -31,14 +31,17 @@ class Interpreter(source: Source) {
   private val parser: Parser
   private var context = Context()
   private val semChecker = SemChecker()
+  private val commandLine: Boolean
 
   init {
     parser = Parser(lexer, source)
+    commandLine = (source is CommandLineSource)
   }
 
   fun run() {
     while (true) {
-      print(">")
+      if (commandLine)
+        print(">")
       val (errors, rootNode) = parser.parse()
       if (rootNode is EotNode) {
         break
