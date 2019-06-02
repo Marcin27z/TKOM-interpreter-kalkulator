@@ -1,3 +1,5 @@
 package tkom.ast
 
-class NopAstNode : ASTNode()
+import tkom.ComplexNumber
+
+class NopAstNode : NotPrintableValueAstNode(ComplexNumber.NONE)

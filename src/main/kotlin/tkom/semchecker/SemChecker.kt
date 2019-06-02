@@ -17,8 +17,8 @@ class SemChecker private constructor(private val builtInFunction: HashMap<String
   }
 
   private var assignedVariablesSet = HashSet<String>()
-  private val definedFunctionsSet = HashSet<Pair<String, Int>>()
-  val errorList = arrayListOf<String>()
+  private val definedFunctionsMap = HashMap<String, Int>()
+  private val errorList = arrayListOf<String>()
 
   private fun initBuiltInFunctions() {
     builtInFunction["print"] = 1
@@ -28,6 +28,18 @@ class SemChecker private constructor(private val builtInFunction: HashMap<String
 
   private fun getBuiltInFunctionArgumentNumber(identifier: String): Int? {
     return builtInFunction[identifier]
+  }
+
+  fun cancelAssignment(variable: String) {
+    assignedVariablesSet.remove(variable)
+  }
+
+  fun getErrorList(): ArrayList<String> {
+    return errorList
+  }
+
+  fun clearErrorList() {
+    errorList.clear()
   }
 
   fun semCheck(node: ASTNode, insideLoop: Boolean = false, insideFunction: Boolean = false) {
@@ -77,11 +89,11 @@ class SemChecker private constructor(private val builtInFunction: HashMap<String
         }
         val assignedVariablesSetOutside = HashSet(assignedVariablesSet)
         assignedVariablesSet.addAll(argumentsHashSet)
-        definedFunctionsSet.add(Pair(node.identifier.identifier, (node.arguments).arguments.size))
+        definedFunctionsMap[node.identifier.identifier]  = (node.arguments).arguments.size
         semCheck(node.instructionList, insideLoop, true)
         assignedVariablesSet = assignedVariablesSetOutside
         if (errorCountBefor != errorList.size) {
-          definedFunctionsSet.remove(Pair((node.identifier).identifier, (node.arguments).arguments.size))
+          definedFunctionsMap.remove((node.identifier).identifier)
         }
         assignedVariablesSet = oldAssignedVariablesSet
 
@@ -99,8 +111,11 @@ class SemChecker private constructor(private val builtInFunction: HashMap<String
       is FunctionCallAstNode -> {
         val functionIdentifier = node.identifier.identifier
         val arguments = node.argumentsList.callArguments
+        for (argument in arguments) {
+          semCheck(argument)
+        }
         val functionArgumentsNumber = arguments.size
-        if (!definedFunctionsSet.contains(Pair(functionIdentifier, functionArgumentsNumber))) {
+        if (!definedFunctionsMap.contains(functionIdentifier) || definedFunctionsMap[functionIdentifier] != functionArgumentsNumber) {
           errorList.add("No function with name \"$functionIdentifier\" and $functionArgumentsNumber arguments defined")
         }
       }

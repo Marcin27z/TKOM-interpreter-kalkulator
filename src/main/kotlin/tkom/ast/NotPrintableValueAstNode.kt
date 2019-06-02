@@ -2,4 +2,4 @@ package tkom.ast
 
 import tkom.ComplexNumber
 
-class NotPrintableValueAstNode(value: ComplexNumber) : ValueAstNode(value)
+open class NotPrintableValueAstNode(value: ComplexNumber) : ValueAstNode(value)

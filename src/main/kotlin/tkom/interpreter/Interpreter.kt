@@ -25,7 +25,7 @@ import tkom.source.CommandLineSource
 import tkom.source.Source
 import java.lang.Math.sqrt
 
-class Interpreter(source: Source) {
+class Interpreter(private val source: Source) {
 
   private val lexer: Lexer = Lexer(source)
   private val parser: Parser
@@ -50,15 +50,20 @@ class Interpreter(source: Source) {
           continue
         }
         semChecker.semCheck(rootNode)
-        if (semChecker.errorList.size > 0) {
-          for (error in semChecker.errorList) {
+        val semCheckErrorList = semChecker.getErrorList()
+        if (semCheckErrorList.size > 0) {
+          for (error in semCheckErrorList) {
             println(error)
           }
-          semChecker.errorList.clear()
+          semChecker.clearErrorList()
         } else {
-          val result = interpret(rootNode)
-          if (result is ValueAstNode && result !is NotPrintableValueAstNode) {
-            println(result.value)
+          try {
+            val result = interpret(rootNode)
+            if (result is ValueAstNode && result !is NotPrintableValueAstNode) {
+              println(result.value)
+            }
+          } catch (e: Exception) {
+            println(e.message)
           }
         }
       }
@@ -133,7 +138,7 @@ class Interpreter(source: Source) {
   }
 
   private fun executeIdentifier(node: IdentifierAstNode): ASTNode {
-    return ValueAstNode(ComplexNumber(context.getVariable(node.identifier)!!))
+    return ValueAstNode(context.getVariable(node.identifier)!!)
   }
 
   private fun executeNegation(node: NegationAstNode): ASTNode {
@@ -178,7 +183,7 @@ class Interpreter(source: Source) {
     val callResult = if (result is ReturnAstNode) {
       interpret(result)
     } else {
-      result
+      NopAstNode()
     }
     // restore context
     context = oldContext
@@ -226,20 +231,24 @@ class Interpreter(source: Source) {
   }
 
   private fun executeAssignment(node: AssignmentAstNode): ASTNode {
-    val possibleValue = interpret(node.value)
-    return if (possibleValue is NopAstNode) {
-      context.setVariable((node.identifier as IdentifierAstNode).identifier, ZERO)
-      NotPrintableValueAstNode(ZERO)
-    } else {
+    try {
+      val possibleValue = interpret(node.value)
       val valueNode = (possibleValue as ValueAstNode)
       context.setVariable((node.identifier as IdentifierAstNode).identifier, valueNode.value)
-      NotPrintableValueAstNode(valueNode.value)
+      return NotPrintableValueAstNode(valueNode.value)
+    } catch (e: Exception) {
+      val identifier = (node.identifier as IdentifierAstNode).identifier
+      if (context.getVariable(identifier) == null)
+        semChecker.cancelAssignment(identifier)
+      throw e
     }
   }
 
   private fun executeBinOp(node: BinOpAstNode): ASTNode {
-    val leftValue = (interpret(node.leftOperand) as ValueAstNode).value
-    val rightValue = (interpret(node.rightOperand) as ValueAstNode).value
+    val leftValueNode = interpret(node.leftOperand)
+    val rightValueNode = interpret(node.rightOperand)
+    val leftValue = (leftValueNode as ValueAstNode).value
+    val rightValue = (rightValueNode as ValueAstNode).value
     return when (node) {
       is AddAstNode -> {
         ValueAstNode(leftValue.add(rightValue))
@@ -314,7 +323,7 @@ class Interpreter(source: Source) {
   }
 
   fun singleTestRun(): ComplexNumber {
-    var resultNumber = ComplexNumber.ZERO
+    var resultNumber = ZERO
     while (true) {
       val (errors, rootNode) = parser.parse()
       if (rootNode is EotNode) {
@@ -324,11 +333,11 @@ class Interpreter(source: Source) {
           continue
         }
         semChecker.semCheck(rootNode)
-        if (semChecker.errorList.size > 0) {
-          for (error in semChecker.errorList) {
+        if (semChecker.getErrorList().size > 0) {
+          for (error in semChecker.getErrorList()) {
             println(error)
           }
-          semChecker.errorList.clear()
+          semChecker.clearErrorList()
         } else {
           val result = interpret(rootNode)
           if (result is ValueAstNode && result !is NotPrintableValueAstNode) {
@@ -338,5 +347,9 @@ class Interpreter(source: Source) {
       }
     }
     return resultNumber
+  }
+
+  class InvalidTypeException(message: String) : Exception(message) {
+
   }
 }

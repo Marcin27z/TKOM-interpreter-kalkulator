@@ -118,4 +118,126 @@ class InterpreterTest {
     System.setOut(originalOut)
   }
 
+  @Test
+  fun notInitializedVariableTest() {
+    val originalOut = System.out
+    val outContent = ByteArrayOutputStream()
+    System.setOut(PrintStream(outContent))
+    val testProgram = "a\n"
+    val source = CommandLineSource(testProgram.byteInputStream())
+    val interpreter = Interpreter(source)
+    interpreter.singleTestRun()
+    assertEquals("Variable a is not initialized\r\n", outContent.toString())
+    System.setOut(originalOut)
+  }
+
+  @Test
+  fun notDefinedFunctionVariableTest() {
+    val originalOut = System.out
+    val outContent = ByteArrayOutputStream()
+    System.setOut(PrintStream(outContent))
+    val testProgram = "a()\n"
+    val source = CommandLineSource(testProgram.byteInputStream())
+    val interpreter = Interpreter(source)
+    interpreter.singleTestRun()
+    assertEquals("No function with name \"a\" and 0 arguments defined\r\n", outContent.toString())
+    System.setOut(originalOut)
+  }
+
+  @Test
+  fun wrongNumberOfArgumentsForFunction() {
+    val originalOut = System.out
+    val outContent = ByteArrayOutputStream()
+    System.setOut(PrintStream(outContent))
+    val testProgram = "fun a(){\n" +
+        "}\n" +
+        "a(1)\n"
+    val source = CommandLineSource(testProgram.byteInputStream())
+    val interpreter = Interpreter(source)
+    interpreter.singleTestRun()
+    assertEquals("No function with name \"a\" and 1 arguments defined\r\n", outContent.toString())
+    System.setOut(originalOut)
+  }
+
+  @Test
+  fun unexpectedBreak() {
+    val originalOut = System.out
+    val outContent = ByteArrayOutputStream()
+    System.setOut(PrintStream(outContent))
+    val testProgram = "break\n"
+    val source = CommandLineSource(testProgram.byteInputStream())
+    val interpreter = Interpreter(source)
+    interpreter.singleTestRun()
+    assertEquals("Unexpected break statement\r\n", outContent.toString())
+    System.setOut(originalOut)
+  }
+
+  @Test
+  fun unexpectedReturn() {
+    val originalOut = System.out
+    val outContent = ByteArrayOutputStream()
+    System.setOut(PrintStream(outContent))
+    val testProgram = "return 5\n"
+    val source = CommandLineSource(testProgram.byteInputStream())
+    val interpreter = Interpreter(source)
+    interpreter.singleTestRun()
+    assertEquals("Unexpected return statement\r\n", outContent.toString())
+    System.setOut(originalOut)
+  }
+
+  @Test
+  fun parseErrorTest1() {
+    val originalOut = System.out
+    val outContent = ByteArrayOutputStream()
+    System.setOut(PrintStream(outContent))
+    val testProgram = "a = 5;\n"
+    val source = CommandLineSource(testProgram.byteInputStream())
+    val interpreter = Interpreter(source)
+    interpreter.singleTestRun()
+    assertEquals("a = 5;\r\n" +
+        "     ^\r\n" +
+        "line: 0, column: 6 expected LINE_BREAK\r\n", outContent.toString())
+    System.setOut(originalOut)
+  }
+
+  @Test
+  fun parseErrorTest2() {
+    val originalOut = System.out
+    val outContent = ByteArrayOutputStream()
+    System.setOut(PrintStream(outContent))
+    val testProgram = "a = 5,5\n"
+    val source = CommandLineSource(testProgram.byteInputStream())
+    val interpreter = Interpreter(source)
+    interpreter.singleTestRun()
+    assertEquals("a = 5,5\r\n" +
+        "     ^\r\n" +
+        "line: 0, column: 6 expected LINE_BREAK\r\n" +
+        "a = 5,5\r\n" +
+        "     ^\r\n" +
+        "line: 0, column: 6 unexpected token: ,\r\n" +
+        "a = 5,5\r\n" +
+        "      ^\r\n" +
+        "line: 0, column: 7 expected LINE_BREAK\r\n", outContent.toString())
+    System.setOut(originalOut)
+  }
+
+  @Test
+  fun parseErrorTest3() {
+    val originalOut = System.out
+    val outContent = ByteArrayOutputStream()
+    System.setOut(PrintStream(outContent))
+    val testProgram = "for (j = 0, j < 5, j = j + 1) {\n" +
+        "}\n"
+    val source = CommandLineSource(testProgram.byteInputStream())
+    val interpreter = Interpreter(source)
+    interpreter.singleTestRun()
+    assertEquals("for (j = 0, j < 5, j = j + 1) {\r\n" +
+        "          ^\r\n" +
+        "line: 0, column: 11 expected SEMICOLON\r\n" +
+        "for (j = 0, j < 5, j = j + 1) {\r\n" +
+        "                 ^\r\n" +
+        "line: 0, column: 18 expected SEMICOLON\r\n", outContent.toString())
+    System.setOut(originalOut)
+  }
+
 }
